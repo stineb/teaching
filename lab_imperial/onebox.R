@@ -74,7 +74,7 @@ if (problem==1) {
 
   ## modify plotting parameters
   par( xaxs="i", # plotting domain starts at first and ends at last value (by default, R adds ~5% space on either side)
-       las=1     # horizontal axis tick labels 
+       las=1     # horizontal axis tick labels
       )
 
   ## label x- and y-axis, plot a thick red line:
@@ -87,7 +87,7 @@ if (problem==1) {
   ## add ticks on top side (by over-laying axis)
   axis(3,labels=FALSE)
   ## add ticks on right side (by over-laying axis)
-  axis(4,labels=FALSE) 
+  axis(4,labels=FALSE)
 
   ## overlay second curve (out2 with longer turnover time)
   lines( seq(len), out2, col="red", lty=2, lwd=2 )
@@ -118,7 +118,7 @@ if (problem==1) {
 
   ## modify plotting parameters
   par( xaxs="i", # plotting domain starts at first and ends at last value (by default, R adds ~5% space on either side)
-       las=1     # horizontal axis tick labels 
+       las=1     # horizontal axis tick labels
       )
 
   ## label x- and y-axis, plot a thick red line:
@@ -132,7 +132,7 @@ if (problem==1) {
   ## add ticks on top side (by over-laying axis)
   axis(3,labels=FALSE)
   ## add ticks on right side (by over-laying axis)
-  axis(4,labels=FALSE) 
+  axis(4,labels=FALSE)
 
   ## overlay second curve (out2 with longer turnover time)
   lines( seq(len), out2, col="red", lty=2, lwd=2 )
@@ -142,9 +142,9 @@ if (problem==1) {
 
 } else if (problem==3) {
   ## //////////////////////////////////////////////////
-  ## 3. simulate the additional sink in response to a 
+  ## 3. simulate the additional sink in response to a
   ## step increase in the input flux. Start from pre-
-  ## determined equilibrium. Turnover time is held 
+  ## determined equilibrium. Turnover time is held
   ## constant
   ## --------------------------------------------------
   len       <- 500
@@ -170,7 +170,7 @@ if (problem==1) {
 
   ## modify plotting parameters
   par( xaxs="i", # plotting domain starts at first and ends at last value (by default, R adds ~5% space on either side)
-       las=1     # horizontal axis tick labels 
+       las=1     # horizontal axis tick labels
       )
 
   ## label x- and y-axis, plot a thick red line:
@@ -184,7 +184,7 @@ if (problem==1) {
   ## add ticks on top side (by over-laying axis)
   axis(3,labels=FALSE)
   ## add ticks on right side (by over-laying axis)
-  axis(4,labels=FALSE) 
+  axis(4,labels=FALSE)
 
   ## overlay second curve (out2 with longer turnover time)
   lines( seq(len), out2, col="red", lty=2, lwd=2 )

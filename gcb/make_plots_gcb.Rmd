@@ -1,0 +1,359 @@
+---
+title: "Plots for intro lecture to Global Change Biology"
+output: html_document
+author: "Beni Stocker"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+  toc: true
+toc_depth: 3
+number_sections: true
+---
+
+# Box models
+
+```{r}
+library(ggplot2)
+library(tidyr)
+library(gganimate)
+library(gifski)
+library(purrr)
+library(stringr)
+```
+
+This produces plots and animations for the intro to biogeochemical cycles as part of the lecture *Global Change Biology* (ETH Zürich).
+
+## Function definition
+
+Illustrations are made for the dynamics of a 1-box model with first-order decay. Such a model is defined as a function below.
+
+```{r}
+## //////////////////////////////////////////////////
+## 1-BOX MODEL
+## --------------------------------------------------
+onebox <- function( c_influx, tau, cpool0 ) {
+  ## ------------------------------------------------
+  ## c_influx:  flux into pool (GtC a-1)
+  ## cpool0:    initial pool size (GtC)
+  ## tau:       turnover (residence) time (a)
+  ## ------------------------------------------------
+  tauisvec <- ifelse(length(tau)==length(c_influx), TRUE, FALSE)
+
+  ## determine integration length (number of time steps) from length of 'c_influx'
+  len <- length(c_influx)
+
+  ## initialise output variable (time series of pool size)
+  out_cpool <- rep( NA, len )
+
+  ## copy initial pool size to first element in output time series
+  cpool <- cpool0
+
+  ## integrate over each time step (this is an implementation of the differential equation)
+  for (yr in seq(len) ) {
+
+    ## copy current pool size to output time series
+    out_cpool[yr] <- cpool
+
+    ## update pool size with input and decay
+    cpool <- cpool + c_influx[yr] - 1/ifelse(tauisvec, tau[yr], tau) * cpool
+
+  }
+
+  ## function return value is a vector containing the output time series
+  return( out_cpool )
+
+}
+```
+
+## Pulse-decay
+
+```{r}
+nt       <- 400
+cpool0    <- 3000
+c_influx  <- rep( 0, nt )
+c_influx[50] <- 100
+tau       <- 50
+
+df <- tibble(year = seq(nt), c_influx = c_influx) %>%
+  dplyr::mutate(c_pool = onebox(c_influx = c_influx, tau = 50, cpool0 = 0))
+
+gganim <- df %>%
+  pivot_longer(starts_with("c_"), names_to = "var", values_to = "c_") %>%
+  ggplot(aes(x = year, y = c_)) +
+  geom_line(size = 1, color = "tomato") +
+  labs(y = "Carbon (Gt C)", x = "Year") +
+  facet_wrap( ~var, nrow = 2, labeller = labeller(var = c("c_influx" = "C influx", "c_pool" = "C pool")) ) +
+  theme(strip.text = element_text(face = "bold")) +
+  theme_grey(base_size = 20) +
+  transition_reveal(year)
+
+animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/gganim_1box_pulse.gif", loop = TRUE))
+```
+
+## Spin up with two turnover rates
+
+```{r}
+c_influx  <- rep( 60, nt )
+
+df <- tibble(year = seq(nt), c_influx_tau50 = c_influx, c_influx_tau60 = c_influx) %>%
+  dplyr::mutate(c_pool_tau50 = onebox(c_influx = c_influx_tau50, tau = 50, cpool0 = 0),
+                c_pool_tau60 = onebox(c_influx = c_influx_tau60, tau = 60, cpool0 = 0))
+
+
+gganim <- df %>%
+  pivot_longer(starts_with("c_"), names_to = "var", values_to = "c_") %>%
+  mutate(tau = purrr::map_chr(var, ~ifelse(str_detect(., pattern = "_tau50$"), "50", "60"))) %>%
+  mutate(var = purrr::map_chr(var, ~str_remove(., "_tau50"))) %>%
+  mutate(var = purrr::map_chr(var, ~str_remove(., "_tau60"))) %>%
+  ggplot(aes(x = year, y = c_, color = tau)) +
+  geom_line(size = 1) +
+  facet_wrap(~var, nrow = 2, labeller = labeller(var = c("c_influx" = "C influx", "c_pool" = "C pool")), scales = "free") +
+  labs(y = "Carbon (Gt C)", x = "Year") +
+  theme(strip.text = element_text(face = "bold")) +
+  theme_grey(base_size = 20) +
+  transition_reveal(year)
+
+animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/gganim_1box_spinup.gif", loop = TRUE))
+```
+
+## Equilibrium?
+
+```{r}
+c_influx  <- rep( 60, nt ) + rnorm(n = nt, mean = 0, sd = 5)
+
+df <- tibble(year = seq(nt), c_influx = c_influx) %>%
+  dplyr::mutate(c_pool_tau50 = onebox(c_influx = c_influx, tau = 50, cpool0 = 0))
+
+gganim <- df %>%
+  pivot_longer(starts_with("c_"), names_to = "var", values_to = "c_") %>%
+  ggplot(aes(x = year, y = c_)) +
+  geom_line(size = 1, color = "tomato") +
+  facet_wrap(~var, nrow = 2, labeller = labeller(var = c("c_influx" = "C influx", "c_pool" = "C pool")), scales = "free") +
+  labs(y = "Carbon (Gt C)", x = "Year") +
+  theme(strip.text = element_text(face = "bold")) +
+  theme_grey(base_size = 20) +
+  transition_reveal(year)
+
+animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/gganim_1box_steadystate.gif", loop = TRUE))
+```
+
+## Step change in input flux
+
+```{r}
+c_influx  <- c(rep( 60, 100 ), rep( 80, (nt-100) ))
+
+df <- tibble(year = seq(nt), c_influx_tau50 = c_influx, c_influx_tau60 = c_influx) %>%
+  dplyr::mutate(c_pool_tau50 = onebox(c_influx = c_influx_tau50, tau = 50, cpool0 = 3000),
+                c_pool_tau60 = onebox(c_influx = c_influx_tau60, tau = 60, cpool0 = 3000*60/50))
+
+gganim <- df %>%
+  mutate(c_pool_tau50 = c_pool_tau50 - c_pool_tau50[1], c_pool_tau60 = c_pool_tau60 - c_pool_tau60[1]) %>%
+  pivot_longer(starts_with("c_"), names_to = "var", values_to = "c_") %>%
+  mutate(tau = purrr::map_chr(var, ~ifelse(str_detect(., pattern = "_tau50$"), "50", "60"))) %>%
+  mutate(var = purrr::map_chr(var, ~str_remove(., "_tau50"))) %>%
+  mutate(var = purrr::map_chr(var, ~str_remove(., "_tau60"))) %>%
+  ggplot(aes(x = year, y = c_, color = tau)) +
+  geom_line(size = 1) +
+  facet_wrap(~var, nrow = 2, labeller = labeller(var = c("c_influx" = "C influx", "c_pool" = "Increase in C pool")), scales = "free") +
+  labs(y = "Carbon (Gt C)", x = "Year") +
+  theme(strip.text = element_text(face = "bold")) +
+  theme_grey(base_size = 20) +
+  transition_reveal(year)
+
+animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/gganim_1box_step.gif", loop = TRUE))
+```
+
+## Step change in turnover time
+
+```{r}
+c_influx  <- rep( 60, nt )
+vec_tau <-  c(rep( 50, 100 ), rep( 60, (nt-100) ))
+
+df <- tibble(year = seq(nt),
+             c_influx = c_influx,
+             tau = vec_tau) %>%
+  dplyr::mutate(c_pool = onebox(c_influx = c_influx, tau = vec_tau, cpool0 = 3000)) %>%
+  dplyr::mutate(c_uptake = c_pool - lag(c_pool, 1))
+
+gganim <- df %>%
+  pivot_longer(c(tau, c_pool, c_uptake), names_to = "var", values_to = "c_") %>%
+  mutate(var = factor(var, levels = c("tau", "c_pool", "c_uptake"))) %>%
+  ggplot(aes(x = year, y = c_)) +
+  geom_line(size = 1, color = "tomato") +
+  facet_wrap(~var, nrow = 3, labeller = labeller(var = c("tau" = "tau (yr)", "c_pool" = "C pool (Gt C)", "c_uptake" = "C uptake (Gt C/yr)")), scales = "free") +
+  labs(y = "", x = "Year") +
+  theme(strip.text = element_text(face = "bold")) +
+  theme_grey(base_size = 20) +
+  transition_reveal(year)
+
+animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/gganim_1box_tauincrease.gif", loop = TRUE))
+```
+
+# Maps
+
+Some maps are created in 
+
+## Photosynthesis
+
+```{r}
+## load data created in eval_pmodel/eval_pmodel_global.Rmd
+load("~/eval_pmodel/data/nc_gpp_mean.Rdata")
+
+plot_map3(
+  nc_gpp_mean, 
+  colorscale = viridis, 
+  nbin = 15, 
+  # plot_title = "GPP: Mean of other models", 
+  plot_subtitle = expression( paste("g C m"^-2, " yr"^-1 ) ), 
+  breaks = c(seq(0, 3000, 200), Inf)
+  )
+ggsave("~/teaching/gcb/photosynthesis.pdf", width = 8, height = 4)
+```
+
+## Land use
+
+```{r}
+nc_lu <- read_nc_onefile("~/data/landuse_data/hyde32_gcp2017/landuse_hyde32_gcp2017_halfdeg.cdf") %>%    
+  slice_nc(75) %>% 
+  extract_nc(var = "crop")
+
+nc_lu$vars$crop <- ifelse(nc_lu$vars$crop > 1.0, 1.0, nc_lu$vars$crop)
+nc_lu$vars$crop <- ifelse(nc_lu$vars$crop < 0.0, 0.0, nc_lu$vars$crop)
+
+plot_map3(
+  nc_lu, 
+  colorscale = c("wheat3","green4","yellow","orange","red3"), 
+  nbin = 15, 
+  plot_title = "Cropland",
+  plot_subtitle = "HYDE 3.2, area fraction", 
+  breaks = seq(0, 1, 0.1)
+  # legend_title = "(unitless)"
+  )
+ggsave("~/teaching/gcb/cropland.pdf", width = 8, height = 4)
+
+```
+
+## P/PET map
+
+```{r}
+require(ncdf4)
+library(ggplot2)
+library(rbeni)
+
+ncfiln <- "~/data/greve/ep_over_p_cru_ncep.nc"
+if (!file.exists(ncfiln)) {
+  epop <- array( 1, dim=c(720,360) )
+} else {
+  nc <- nc_open( ncfiln )
+  epop <- ncvar_get( nc, varid="EP_OVER_P_CRU_NCEP" )
+}
+
+gg <- plot_map3(
+  1/epop,
+  breaks = c(0,0.2,0.3,0.4,0.5,0.7,1,1.3,1.6,2,2.5,3,Inf),
+  colorscale = c( "royalblue3", "wheat", "tomato" ) %>% rev(),
+  combine = FALSE,
+  legend_title = "P/PET"
+)
+
+cowplot::plot_grid(gg$ggmap, gg$gglegend, ncol = 2, rel_widths = c(1, 0.2))
+
+ggsave("~/teaching/gcb/map_p_pet.pdf", width = 8, height = 4)
+```
+
+## fAPAR map
+
+```{r}
+nc_fapar <- read_nc_onefile("~/data/modis_lai_fpar_zmaw/MODIS-C006_MOD15A2__LAI_FPAR__LPDAAC__GLOBAL_0.5degree__UHAM-ICDC__2000_2018__MON__fv0.02_MEAN.nc") %>% 
+  extract_nc("fpar")
+
+gg <- plot_map3(
+  nc_fapar,
+  colorscale = c( "wheat", "darkgreen" ), #
+  combine = TRUE
+)
+gg
+ggsave("~/teaching/gcb/map_fapar.pdf", width = 8, height = 4)
+```
+
+## Photosynthesis FvCB model
+
+```{r}
+library(rpmodel)
+library(dplyr)
+# modified seq() function to get a logarithmically spaced sequence
+lseq <- function(from=1, to=100000, length.out=6) {
+  exp(seq(log(from), log(to), length.out = length.out))
+}
+
+## Set parameters
+beta <- 146          # unit cost ratio a/b
+c_cost <- 0.41
+gamma <- 0.105       # unit cost ratio c/b
+kphio <- 0.05        # quantum yield efficiency
+c_molmass <- 12.0107 # molar mass, g / mol
+
+## Define environmental conditions
+tc <- 20             # temperature, deg C
+ppfd <- 100/(24*60*60)*1e6         # mol/m2/d
+vpd  <- 1000         # Pa
+co2  <- 400          # ppm
+elv  <- 0            # m.a.s.l.
+fapar <- 1           # fraction
+patm <- 101325       # Pa
+
+out_pmodel <- rpmodel::rpmodel(
+  tc             = tc,
+  vpd            = vpd,
+  co2            = co2,
+  elv            = elv,
+  kphio          = kphio,
+  beta           = beta,
+  fapar          = fapar,
+  ppfd           = ppfd,
+  method_optci   = "prentice14",
+  method_jmaxlim = "none",
+  do_ftemp_kphio = FALSE
+  )
+
+calc_aj <- function(ci, gammastar, kphio, ppfd){
+  kphio * ppfd * (ci - gammastar)/(ci + 2 * gammastar)
+}
+calc_ac <- function(ci, gammastar, kmm, vcmax){
+  vcmax * (ci - gammastar)/(ci + kmm)
+}
+
+co2_to_ca <- function( co2, patm ){
+  ( 1.0e-6 ) * co2 * patm         # Pa, atms. CO2
+}
+
+calc_a_gs <- function(ci, gs, ca){
+  gs * (ca - ci)
+}
+
+df_ci <- tibble(
+  ci = seq(0, 1000, length.out = 100)) %>% 
+  rowwise() %>% 
+  mutate(ci_pa = co2_to_ca(ci, patm = patm)) %>% 
+  mutate(a_j = calc_aj(ci_pa, out_pmodel$gammastar, kphio = kphio, ppfd = ppfd)) %>% 
+  mutate(a_c = calc_ac(ci_pa, out_pmodel$gammastar, out_pmodel$kmm, vcmax = out_pmodel$vcmax)) %>% 
+  mutate(a_act = min(a_j, a_c)) %>% 
+  mutate(a_gs = calc_a_gs(ci_pa, gs = out_pmodel$gs, ca = out_pmodel$ca))
+  
+df_ci %>% 
+  pivot_longer(cols = c(a_j, a_c, a_gs), names_to = "Rate", values_to = "a_") %>% 
+  ggplot(aes(x = ci)) +
+  geom_line(aes(y = a_, color = Rate)) +
+  geom_line(aes(y = a_act)) +
+  # geom_line(aes(y = a_gs), linetype = "dashed") +
+  xlim(50, 1000) + ylim(0, 80) +
+  labs(x = expression(paste("c"[i], " (ppm)")), y = expression(paste("A (", mu, "mol m" ^{-2}," s" ^{-1}, ")"))) +
+  scale_color_discrete(
+    name = "Rate", 
+    breaks = c("a_gs", "a_j", "a_c"),
+    labels = c(expression(paste("A"[gs])), expression(paste("A"[J])), expression(paste("A"[C])))
+    )
+
+ggsave("~/teaching/gcb/assimilation.pdf", width = 4, height = 2)
+```
+
