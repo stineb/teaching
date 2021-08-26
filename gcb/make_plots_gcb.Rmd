@@ -27,11 +27,12 @@ This produces plots and animations for the intro to biogeochemical cycles as par
 
 Illustrations are made for the dynamics of a 1-box model with first-order decay. Such a model is defined as a function below.
 
+### 1-box
 ```{r}
 ## //////////////////////////////////////////////////
 ## 1-BOX MODEL
 ## --------------------------------------------------
-onebox <- function( c_influx, tau, cpool0 ) {
+onebox <- function( c_influx, tau, cpool0, return_cpool = TRUE) {
   ## ------------------------------------------------
   ## c_influx:  flux into pool (GtC a-1)
   ## cpool0:    initial pool size (GtC)
@@ -44,7 +45,8 @@ onebox <- function( c_influx, tau, cpool0 ) {
 
   ## initialise output variable (time series of pool size)
   out_cpool <- rep( NA, len )
-
+  out_outflux <- rep(NA, len)
+  
   ## copy initial pool size to first element in output time series
   cpool <- cpool0
 
@@ -53,14 +55,151 @@ onebox <- function( c_influx, tau, cpool0 ) {
 
     ## copy current pool size to output time series
     out_cpool[yr] <- cpool
+    
+    ## outflux
+    outflux <- 1/ifelse(tauisvec, tau[yr], tau) * cpool
 
     ## update pool size with input and decay
-    cpool <- cpool + c_influx[yr] - 1/ifelse(tauisvec, tau[yr], tau) * cpool
+    cpool <- cpool + c_influx[yr] - outflux
+    out_outflux[yr] <- outflux
 
   }
 
   ## function return value is a vector containing the output time series
-  return( out_cpool )
+  if (return_cpool){
+    return( out_cpool )
+  } else {
+    return( out_outflux )
+  }
+
+}
+```
+
+### 1-box non-linear in tau
+```{r}
+## //////////////////////////////////////////////////
+## 1-BOX MODEL
+## --------------------------------------------------
+onebox_nonlintau <- function(df, cpool0) {
+  ## ------------------------------------------------
+  ## c_influx:  flux into pool (GtC a-1)
+  ## cpool0:    initial pool size (GtC)
+  ## tau:       turnover (residence) time (a)
+  ## ------------------------------------------------
+  ## determine integration length (number of time steps) from length of 'c_influx'
+  len <- length(df$c_influx)
+
+  ## initialise output variable (time series of pool size)
+  df$cpool <- rep( NA, len )
+
+  ## copy initial pool size to first element in output time series
+  df$cpool[1] <- cpool0
+  df <- df %>% mutate(tau = NA)
+  df$tau[1] <- 50
+
+  ## integrate over each time step (this is an implementation of the differential equation)
+  for (yr in 2:len ) {
+    
+    df$tau[yr] <- (50 - (df$cpool[yr-1] - 3000)/100)
+    
+    ## outflux
+    outflux <- 1/df$tau[yr] * df$cpool[yr-1]
+
+    ## update pool size with input and decay
+    df$cpool[yr] <- df$cpool[yr-1] + c_influx[yr] - outflux
+
+  }
+
+  ## function return value is a vector containing the output time series
+  return( df )
+
+}
+```
+
+### 2-box model
+```{r}
+## //////////////////////////////////////////////////
+## 1-BOX MODEL
+## --------------------------------------------------
+twobox <- function( df, a1, tau1, tau2, cpool0_1, cpool0_2, return_cpool = TRUE) {
+  ## ------------------------------------------------
+  ## c_influx:  flux into pool (GtC a-1)
+  ## cpool0:    initial pool size (GtC)
+  ## tau:       turnover (residence) time (a)
+  ## ------------------------------------------------
+  tauisvec <- ifelse(length(tau1)==length(df$c_influx), TRUE, FALSE)
+
+  ## determine integration length (number of time steps) from length of 'c_influx'
+  len <- nrow(df)
+
+  ## initialise output variable (time series of pool size)
+  df$cpool1 <- rep( NA, len )
+  df$cpool2 <- rep( NA, len )
+
+  ## copy initial pool size to first element in output time series
+  df$cpool1[1] <- cpool0_1
+  df$cpool2[1] <- cpool0_2
+
+  ## integrate over each time step (this is an implementation of the differential equation)
+  for (yr in 2:len ) {
+    
+    ## outflux
+    outflux1 <- 1/ifelse(tauisvec, tau1[yr], tau1) * df$cpool1[yr-1]
+    outflux2 <- 1/ifelse(tauisvec, tau2[yr], tau2) * df$cpool2[yr-1]
+
+    ## update pool size with input and decay
+    df$cpool1[yr] <- df$cpool1[yr-1] + a1 * df$c_influx[yr] - outflux1
+    df$cpool2[yr] <- df$cpool2[yr-1] + (1 - a1) * df$c_influx[yr] - outflux2
+
+  }
+
+  ## function return value is a vector containing the output time series
+  return( df )
+
+}
+```
+
+### 2-box non-linear in allocation
+```{r}
+## //////////////////////////////////////////////////
+## 1-BOX MODEL
+## --------------------------------------------------
+twobox_nonlin <- function( df, a1, tau1, tau2, cpool0_1, cpool0_2, return_cpool = TRUE) {
+  ## ------------------------------------------------
+  ## c_influx:  flux into pool (GtC a-1)
+  ## cpool0:    initial pool size (GtC)
+  ## tau:       turnover (residence) time (a)
+  ## ------------------------------------------------
+  ## determine integration length (number of time steps) from length of 'c_influx'
+  len <- nrow(df)
+
+  ## initialise output variable (time series of pool size)
+  df$cpool1 <- rep( NA, len )
+  df$cpool2 <- rep( NA, len )
+  df$a1 <- rep( NA, len )
+
+  ## copy initial pool size to first element in output time series
+  df$cpool1[1] <- cpool0_1
+  df$cpool2[1] <- cpool0_2
+  df$a1[1] <- 0.75
+
+  ## integrate over each time step (this is an implementation of the differential equation)
+  for (yr in 2:len ) {
+    
+    df$a1[yr] <- 0.25 + (df$c_influx[yr] - 60)/50
+    
+    ## outflux
+    outflux1 <- 1/tau1 * df$cpool1[yr-1]
+    outflux2 <- 1/tau2 * df$cpool2[yr-1]
+
+    ## update pool size with input and decay
+    df$cpool1[yr] <- df$cpool1[yr-1] + df$a1[yr] * df$c_influx[yr] - outflux1
+    df$cpool2[yr] <- df$cpool2[yr-1] + (1 - df$a1[yr]) * df$c_influx[yr] - outflux2
+
+  }
+
+  ## function return value is a vector containing the output time series
+  return( df )
 
 }
 ```
@@ -88,6 +227,28 @@ gganim <- df %>%
   transition_reveal(year)
 
 animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/gganim_1box_pulse.gif", loop = TRUE))
+```
+
+## Spin up with one turnover rate
+
+```{r}
+c_influx  <- rep( 60, nt )
+
+df <- tibble(year = seq(nt), c_influx = c_influx) %>%
+  dplyr::mutate(c_pool = onebox(c_influx = c_influx, tau = 50, cpool0 = 0),
+                c_outflux = onebox(c_influx = c_influx, tau = 50, cpool0 = 0, return_cpool = FALSE))
+
+gganim <- df %>%
+  pivot_longer(starts_with("c_"), names_to = "var", values_to = "c_") %>%
+  ggplot(aes(x = year, y = c_)) +
+  geom_line(size = 1, color = "red") +
+  facet_wrap(~var, nrow = 3, labeller = labeller(var = c("c_influx" = "C influx", "c_pool" = "C pool", "c_outflux" = "C outflux")), scales = "free") +
+  labs(y = "Carbon (Gt C)", x = "Year") +
+  theme(strip.text = element_text(face = "bold")) +
+  theme_grey(base_size = 20) +
+  transition_reveal(year)
+
+animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/gganim_1box_spinup.gif", loop = TRUE))
 ```
 
 ## Spin up with two turnover rates
@@ -137,14 +298,73 @@ gganim <- df %>%
 animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/gganim_1box_steadystate.gif", loop = TRUE))
 ```
 
-## Step change in input flux
+## Step change in input flux, one turnovover time
 
 ```{r}
+nt <- 400
 c_influx  <- c(rep( 60, 100 ), rep( 80, (nt-100) ))
 
-df <- tibble(year = seq(nt), c_influx_tau50 = c_influx, c_influx_tau60 = c_influx) %>%
-  dplyr::mutate(c_pool_tau50 = onebox(c_influx = c_influx_tau50, tau = 50, cpool0 = 3000),
-                c_pool_tau60 = onebox(c_influx = c_influx_tau60, tau = 60, cpool0 = 3000*60/50))
+df <- tibble(year = seq(nt), c_influx = c_influx) %>%
+  dplyr::mutate(c_pool = onebox(c_influx = c_influx, tau = 50, cpool0 = 3000))
+
+df2 <- slice(df, 1) %>% 
+  bind_rows(slice(df, nrow(df)))
+
+df3 <- tibble(x = (df2$c_influx[2] - df2$c_influx[1])/df2$c_influx[1],
+              y =  (df2$c_pool[2] - df2$c_pool[1])/df2$c_pool[1])
+
+df4 <- tibble(x = (log(df2$c_influx[2]) - log(df2$c_influx[1])),
+              y =  (log(df2$c_pool[2]) - log(df2$c_pool[1])))
+
+df3 %>% 
+  ggplot(aes(x, y)) +
+  geom_point(size = 3, color = "red") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dotted") +
+  theme_classic() +
+  xlim(0,1) + ylim(0,1) +
+  labs(x = "dI/I", y = "dC*/C*")
+ggsave("~/teaching/gcb/dln.pdf", width = 4, height = 3.5)
+
+gganim <- df %>%
+  mutate(c_pool = c_pool) %>%
+  pivot_longer(starts_with("c_"), names_to = "var", values_to = "c_") %>%
+  ggplot(aes(x = year, y = c_)) +
+  geom_line(size = 1, color = "red") +
+  facet_wrap(~var, nrow = 2, labeller = labeller(var = c("c_influx" = "C influx", "c_pool" = "C pool")), scales = "free") +
+  labs(y = "Carbon (Gt C)", x = "Year") +
+  theme(strip.text = element_text(face = "bold")) +
+  theme_grey(base_size = 20) +
+  transition_reveal(year)
+
+animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/gganim_1box_step.gif", loop = TRUE))
+```
+
+## Step change in input flux, two turnovover times
+
+```{r}
+nt <- 1000
+c_influx  <- c(rep( 60, 100 ), rep( 80, (nt-100) ))
+
+df <- tibble(year = seq(nt), c_influx = c_influx) %>%
+  dplyr::mutate(c_pool_tau50 = onebox(c_influx = c_influx, tau = 50, cpool0 = 3000),
+                c_pool_tau60 = onebox(c_influx = c_influx, tau = 60, cpool0 = 3000*60/50))
+
+df2 <- slice(df, 1) %>% 
+  bind_rows(slice(df, nrow(df)))
+
+df3 <- tibble(x = (df2$c_influx_tau50[2] - df2$c_influx_tau50[1])/df2$c_influx_tau50[1],
+              y_tau50 =  (df2$c_pool_tau50[2] - df2$c_pool_tau50[1])/df2$c_pool_tau50[1],
+              y_tau60 =  (df2$c_pool_tau60[2] - df2$c_pool_tau60[1])/df2$c_pool_tau60[1]) %>% 
+  pivot_longer(cols = starts_with("y_tau"), names_to = "turnover", values_to = "y", names_prefix = "y_tau")
+
+df3 %>% 
+  ggplot(aes(x, y, color = as.factor(turnover), size = 100 - turnover/10)) +
+  geom_point(size = 3) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dotted") +
+  theme_classic() +
+  xlim(0,1) + ylim(0,1) +
+  labs(x = "dI/I", y = "dC*/C*")
+ggsave("~/teaching/gcb/dln_2turnover.pdf", width = 5, height = 3.5)
 
 gganim <- df %>%
   mutate(c_pool_tau50 = c_pool_tau50 - c_pool_tau50[1], c_pool_tau60 = c_pool_tau60 - c_pool_tau60[1]) %>%
@@ -160,7 +380,7 @@ gganim <- df %>%
   theme_grey(base_size = 20) +
   transition_reveal(year)
 
-animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/gganim_1box_step.gif", loop = TRUE))
+animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/gganim_1box_step_2turnover.gif", loop = TRUE))
 ```
 
 ## Step change in turnover time
@@ -187,6 +407,174 @@ gganim <- df %>%
   transition_reveal(year)
 
 animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/gganim_1box_tauincrease.gif", loop = TRUE))
+```
+
+## Non-linearity in turnover time
+
+```{r}
+c_influx  <- c(rep( 60, 100 ), rep( 80, (nt-100) ))
+
+df <- tibble(year = seq(nt),
+             c_influx = c_influx) %>%
+  onebox_nonlintau(cpool0 = 3000)
+
+df2 <- slice(df, 1) %>% 
+  bind_rows(slice(df, nrow(df)))
+
+df3 <- tibble(x = (df2$c_influx[2] - df2$c_influx[1])/df2$c_influx[1],
+              y =  (df2$cpool[2] - df2$cpool[1])/df2$cpool[1])
+
+df3 %>% 
+  ggplot(aes(x, y)) +
+  geom_point(size = 3, color = "red") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dotted") +
+  theme_classic() +
+  xlim(0,1) + ylim(0,1) +
+  labs(x = "dI/I", y = "dC*/C*")
+ggsave("~/teaching/gcb/dln_nonlin_turnover.pdf", width = 5, height = 3.5)
+```
+
+## 2-box model, step change
+
+```{r}
+nt <- 400
+c_influx  <- c(rep( 60, 100 ), rep( 80, (nt-100) ))
+
+df <- tibble(year = seq(nt), c_influx = c_influx) %>%
+  twobox(tau1 = 30, tau2 = 60, cpool0_1 = 0.5*3000, cpool0_2 = 0.5*3000*30/50, a1 = 0.5) %>% 
+  mutate(cpooltot = cpool1 + cpool2)
+
+df2 <- slice(df, 1) %>% 
+  bind_rows(slice(df, nrow(df)))
+
+df3 <- tibble(x = (df2$c_influx[2] - df2$c_influx[1])/df2$c_influx[1],
+              y =  (df2$cpool1[2] - df2$cpool1[1])/df2$cpool1[1])
+
+df4 <- tibble(x = (df2$c_influx[2] - df2$c_influx[1])/df2$c_influx[1],
+              y =  (df2$cpool2[2] - df2$cpool2[1])/df2$cpool2[1])
+
+df5 <- tibble(x = (df2$c_influx[2] - df2$c_influx[1])/df2$c_influx[1],
+              y =  (df2$cpooltot[2] - df2$cpooltot[1])/df2$cpooltot[1])
+
+df3 %>% 
+  ggplot(aes(x, y)) +
+  geom_point(size = 3, color = "red") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dotted") +
+  theme_classic() +
+  xlim(0,1) + ylim(0,1) +
+  labs(x = "dI/I", y = "dC*/C*")
+ggsave("~/teaching/gcb/dln_cpool1.pdf", width = 3, height = 2)
+
+df4 %>% 
+  ggplot(aes(x, y)) +
+  geom_point(size = 3, color = "red") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dotted") +
+  theme_classic() +
+  xlim(0,1) + ylim(0,1) +
+  labs(x = "dI/I", y = "dC*/C*")
+ggsave("~/teaching/gcb/dln_cpool2.pdf", width = 3, height = 2)
+
+## individual pools
+gganim <- df %>%
+  pivot_longer(cols = c(cpool1, cpool2), names_to = "var", values_to = "cpool") %>%
+  ggplot(aes(x = year, y = cpool, color = var)) +
+  geom_line(size = 1) +
+  labs(y = "Carbon (Gt C)", x = "Year") +
+  theme(strip.text = element_text(face = "bold")) +
+  theme_grey(base_size = 20) +
+  transition_reveal(year)
+
+animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/gganim_1box_step_2pools.gif", loop = TRUE))
+
+## total
+gganim <- df %>%
+  select(year, cpooltot) %>%
+  ggplot(aes(x = year, y = cpooltot)) +
+  geom_line(size = 1) +
+  labs(y = "Carbon (Gt C)", x = "Year") +
+  theme(strip.text = element_text(face = "bold")) +
+  theme_grey(base_size = 20) +
+  transition_reveal(year)
+
+animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/gganim_1box_step_tot.gif", loop = TRUE))
+```
+
+## 2-box model, step change, allocation
+
+```{r}
+nt <- 400
+c_influx  <- c(rep( 60, 100 ), rep( 80, (nt-100) ))
+
+df <- tibble(year = seq(nt), c_influx = c_influx) %>%
+  twobox(tau1 = 30, tau2 = 60, cpool0_1 = 0.5*60*30, cpool0_2 = 0.5*60*60, a1 = 0.5) %>% 
+  mutate(cpooltot1 = cpool1 + cpool2) %>%
+  twobox(tau1 = 30, tau2 = 60, cpool0_1 = 0.75*60*30, cpool0_2 = 0.25*60*60, a1 = 0.75) %>% 
+  mutate(cpooltot2 = cpool1 + cpool2)
+
+df2 <- slice(df, 1) %>% 
+  bind_rows(slice(df, nrow(df)))
+
+df3 <- tibble(x = (df2$c_influx[2] - df2$c_influx[1])/df2$c_influx[1],
+              y =  (df2$cpooltot1[2] - df2$cpooltot1[1])/df2$cpooltot1[1])
+
+df4 <- tibble(x = (df2$c_influx[2] - df2$c_influx[1])/df2$c_influx[1],
+              y =  (df2$cpooltot2[2] - df2$cpooltot2[1])/df2$cpooltot2[1])
+
+df3 %>% 
+  ggplot(aes(x, y)) +
+  geom_point(size = 3, color = "red") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dotted") +
+  theme_classic() +
+  xlim(0,1) + ylim(0,1) +
+  labs(x = "dI/I", y = "dC*/C*")
+ggsave("~/teaching/gcb/dln_cpool1.pdf", width = 3, height = 2)
+
+df4 %>% 
+  ggplot(aes(x, y)) +
+  geom_point(size = 3, color = "red") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dotted") +
+  theme_classic() +
+  xlim(0,1) + ylim(0,1) +
+  labs(x = "dI/I", y = "dC*/C*")
+ggsave("~/teaching/gcb/dln_cpool2.pdf", width = 3, height = 2)
+
+## total pools
+gganim <- df %>%
+  pivot_longer(cols = c(cpooltot1, cpooltot2), names_to = "var", values_to = "cpooltot") %>%
+  ggplot(aes(x = year, y = cpooltot, color = var)) +
+  geom_line(size = 1) +
+  labs(y = "Carbon (Gt C)", x = "Year") +
+  theme(strip.text = element_text(face = "bold")) +
+  theme_grey(base_size = 20) +
+  transition_reveal(year)
+
+animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/gganim_1box_step_2pools_allocation.gif", loop = TRUE))
+```
+
+## Non-linearity in allocation
+
+```{r}
+nt <- 400
+c_influx  <- c(rep( 60, 100 ), rep( 80, (nt-100) ))
+
+df <- tibble(year = seq(nt), c_influx = c_influx) %>%
+  twobox_nonlin(tau1 = 30, tau2 = 60, cpool0_1 = 0.5*60*30, cpool0_2 = 0.5*60*60, a1 = 0.5) %>% 
+  mutate(cpooltot1 = cpool1 + cpool2)
+
+df2 <- slice(df, 1) %>% 
+  bind_rows(slice(df, nrow(df)))
+
+df3 <- tibble(x = (df2$c_influx[2] - df2$c_influx[1])/df2$c_influx[1],
+              y =  (df2$cpooltot1[2] - df2$cpooltot1[1])/df2$cpooltot1[1])
+
+df3 %>% 
+  ggplot(aes(x, y)) +
+  geom_point(size = 3, color = "red") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dotted") +
+  theme_classic() +
+  xlim(0,1) + ylim(0,1) +
+  labs(x = "dI/I", y = "dC*/C*")
+ggsave("~/teaching/gcb/dln_cpool_nonlinalloc.pdf", width = 3, height = 2)
 ```
 
 # Maps
@@ -239,6 +627,7 @@ ggsave("~/teaching/gcb/cropland.pdf", width = 8, height = 4)
 require(ncdf4)
 library(ggplot2)
 library(rbeni)
+library(tidyverse)
 
 ncfiln <- "~/data/greve/ep_over_p_cru_ncep.nc"
 if (!file.exists(ncfiln)) {
@@ -254,7 +643,10 @@ gg <- plot_map3(
   colorscale = c( "royalblue3", "wheat", "tomato" ) %>% rev(),
   combine = FALSE,
   legend_title = "P/PET"
-)
+  )
+
+gg$ggmap <- gg$ggmap +
+  ylim(-60, 85)
 
 cowplot::plot_grid(gg$ggmap, gg$gglegend, ncol = 2, rel_widths = c(1, 0.2))
 
@@ -341,7 +733,8 @@ df_ci <- tibble(
   mutate(a_gs = calc_a_gs(ci_pa, gs = out_pmodel$gs, ca = out_pmodel$ca))
   
 df_ci %>% 
-  pivot_longer(cols = c(a_j, a_c, a_gs), names_to = "Rate", values_to = "a_") %>% 
+  # pivot_longer(cols = c(a_j, a_c, a_gs), names_to = "Rate", values_to = "a_") %>% 
+  pivot_longer(cols = c(a_j, a_c), names_to = "Rate", values_to = "a_") %>% 
   ggplot(aes(x = ci)) +
   geom_line(aes(y = a_, color = Rate)) +
   geom_line(aes(y = a_act)) +
@@ -352,8 +745,9 @@ df_ci %>%
     name = "Rate", 
     breaks = c("a_gs", "a_j", "a_c"),
     labels = c(expression(paste("A"[gs])), expression(paste("A"[J])), expression(paste("A"[C])))
-    )
+    ) +
+  theme_classic()
 
-ggsave("~/teaching/gcb/assimilation.pdf", width = 4, height = 2)
+ggsave("~/teaching/gcb/assimilation.pdf", width = 5, height = 3)
 ```
 
