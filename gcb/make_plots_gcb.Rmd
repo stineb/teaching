@@ -621,6 +621,27 @@ ggsave("~/teaching/gcb/cropland.pdf", width = 8, height = 4)
 
 ```
 
+## Land use trend
+
+```{r}
+nc_lu <- nc_to_df("~/data/landuse_data/hyde32_gcp2017/landuse_hyde32_gcp2017_halfdeg_1991_2017_diff.nc", varnam = "crop")
+
+plot_map3(
+  nc_lu, 
+  varnam = "crop",
+  colorscale = rev(c( "royalblue4", "royalblue2", "wheat", "tomato2", "tomato4" )), 
+  nbin = 15, 
+  plot_title = "Cropland change",
+  plot_subtitle = "HYDE 3.2, change in area fraction, 1970-2017", 
+  breaks = seq(-0.5,  0.5, 0.1),
+  latmin = -60, latmax = 80
+  # legend_title = "(unitless)"
+  )
+ggsave("~/teaching/gcb/cropland_diff_diff_1970_2017.pdf", width = 8, height = 4)
+
+```
+
+
 ## P/PET map
 
 ```{r}
@@ -666,6 +687,26 @@ gg <- plot_map3(
 )
 gg
 ggsave("~/teaching/gcb/map_fapar.pdf", width = 8, height = 4)
+```
+
+## LAI map
+
+```{r}
+library(rbeni)
+library(tidyverse)
+
+# df_lai <- nc_to_df("~/data/modis_lai_fpar_zmaw/MODIS-C006_MOD15A2__LAI_FPAR__LPDAAC__GLOBAL_0.5degree__UHAM-ICDC__2000_2018__MON__fv0.02_MEAN.nc", varnam = "lai")
+
+gg <- plot_map3(
+  df_lai,
+  varnam = "lai",
+  colorscale = c( "wheat", "darkgreen" ), #
+  combine = TRUE,
+  breaks = c(0, 0.1, 0.2, 0.5, 1, 1.5, 2, 3, 4, 5, 6), 
+  latmin = -55, latmax = 80
+)
+gg
+ggsave("~/teaching/gcb/map_lair.pdf", width = 8, height = 4)
 ```
 
 ## Photosynthesis FvCB model
