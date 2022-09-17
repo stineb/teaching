@@ -226,7 +226,7 @@ gganim <- df %>%
   theme_grey(base_size = 20) +
   transition_reveal(year)
 
-animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/gganim_1box_pulse.gif", loop = TRUE))
+animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/fig/gganim_1box_pulse.gif", loop = TRUE))
 ```
 
 ## Spin up with one turnover rate
@@ -248,7 +248,7 @@ gganim <- df %>%
   theme_grey(base_size = 20) +
   transition_reveal(year)
 
-animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/gganim_1box_spinup.gif", loop = TRUE))
+animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/fig/gganim_1box_spinup.gif", loop = TRUE))
 ```
 
 ## Spin up with two turnover rates
@@ -274,7 +274,7 @@ gganim <- df %>%
   theme_grey(base_size = 20) +
   transition_reveal(year)
 
-animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/gganim_1box_spinup.gif", loop = TRUE))
+animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/fig/gganim_1box_spinup.gif", loop = TRUE))
 ```
 
 ## Equilibrium?
@@ -295,7 +295,7 @@ gganim <- df %>%
   theme_grey(base_size = 20) +
   transition_reveal(year)
 
-animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/gganim_1box_steadystate.gif", loop = TRUE))
+animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/fig/gganim_1box_steadystate.gif", loop = TRUE))
 ```
 
 ## Step change in input flux, one turnovover time
@@ -323,7 +323,7 @@ df3 %>%
   theme_classic() +
   xlim(0,1) + ylim(0,1) +
   labs(x = "dI/I", y = "dC*/C*")
-ggsave("~/teaching/gcb/dln.pdf", width = 4, height = 3.5)
+ggsave("~/teaching/gcb/fig/dln.pdf", width = 4, height = 3.5)
 
 gganim <- df %>%
   mutate(c_pool = c_pool) %>%
@@ -336,7 +336,7 @@ gganim <- df %>%
   theme_grey(base_size = 20) +
   transition_reveal(year)
 
-animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/gganim_1box_step.gif", loop = TRUE))
+animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/fig/gganim_1box_step.gif", loop = TRUE))
 ```
 
 ## Step change in input flux, two turnovover times
@@ -364,7 +364,7 @@ df3 %>%
   theme_classic() +
   xlim(0,1) + ylim(0,1) +
   labs(x = "dI/I", y = "dC*/C*")
-ggsave("~/teaching/gcb/dln_2turnover.pdf", width = 5, height = 3.5)
+ggsave("~/teaching/gcb/fig/dln_2turnover.pdf", width = 5, height = 3.5)
 
 gganim <- df %>%
   mutate(c_pool_tau50 = c_pool_tau50 - c_pool_tau50[1], c_pool_tau60 = c_pool_tau60 - c_pool_tau60[1]) %>%
@@ -380,7 +380,7 @@ gganim <- df %>%
   theme_grey(base_size = 20) +
   transition_reveal(year)
 
-animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/gganim_1box_step_2turnover.gif", loop = TRUE))
+animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/fig/gganim_1box_step_2turnover.gif", loop = TRUE))
 ```
 
 ## Step change in turnover time
@@ -406,7 +406,7 @@ gganim <- df %>%
   theme_grey(base_size = 20) +
   transition_reveal(year)
 
-animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/gganim_1box_tauincrease.gif", loop = TRUE))
+animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/fig/gganim_1box_tauincrease.gif", loop = TRUE))
 ```
 
 ## Non-linearity in turnover time
@@ -431,7 +431,7 @@ df3 %>%
   theme_classic() +
   xlim(0,1) + ylim(0,1) +
   labs(x = "dI/I", y = "dC*/C*")
-ggsave("~/teaching/gcb/dln_nonlin_turnover.pdf", width = 5, height = 3.5)
+ggsave("~/teaching/gcb/fig/dln_nonlin_turnover.pdf", width = 5, height = 3.5)
 ```
 
 ## 2-box model, step change
@@ -463,7 +463,7 @@ df3 %>%
   theme_classic() +
   xlim(0,1) + ylim(0,1) +
   labs(x = "dI/I", y = "dC*/C*")
-ggsave("~/teaching/gcb/dln_cpool1.pdf", width = 3, height = 2)
+ggsave("~/teaching/gcb/fig/dln_cpool1.pdf", width = 3, height = 2)
 
 df4 %>% 
   ggplot(aes(x, y)) +
@@ -472,7 +472,7 @@ df4 %>%
   theme_classic() +
   xlim(0,1) + ylim(0,1) +
   labs(x = "dI/I", y = "dC*/C*")
-ggsave("~/teaching/gcb/dln_cpool2.pdf", width = 3, height = 2)
+ggsave("~/teaching/gcb/fig/dln_cpool2.pdf", width = 3, height = 2)
 
 ## individual pools
 gganim <- df %>%
@@ -484,7 +484,7 @@ gganim <- df %>%
   theme_grey(base_size = 20) +
   transition_reveal(year)
 
-animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/gganim_1box_step_2pools.gif", loop = TRUE))
+animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/fig/gganim_1box_step_2pools.gif", loop = TRUE))
 
 ## total
 gganim <- df %>%
@@ -496,7 +496,7 @@ gganim <- df %>%
   theme_grey(base_size = 20) +
   transition_reveal(year)
 
-animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/gganim_1box_step_tot.gif", loop = TRUE))
+animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/fig/gganim_1box_step_tot.gif", loop = TRUE))
 ```
 
 ## 2-box model, step change, allocation
@@ -527,7 +527,7 @@ df3 %>%
   theme_classic() +
   xlim(0,1) + ylim(0,1) +
   labs(x = "dI/I", y = "dC*/C*")
-ggsave("~/teaching/gcb/dln_cpool1.pdf", width = 3, height = 2)
+ggsave("~/teaching/gcb/fig/dln_cpool1.pdf", width = 3, height = 2)
 
 df4 %>% 
   ggplot(aes(x, y)) +
@@ -536,7 +536,7 @@ df4 %>%
   theme_classic() +
   xlim(0,1) + ylim(0,1) +
   labs(x = "dI/I", y = "dC*/C*")
-ggsave("~/teaching/gcb/dln_cpool2.pdf", width = 3, height = 2)
+ggsave("~/teaching/gcb/fig/dln_cpool2.pdf", width = 3, height = 2)
 
 ## total pools
 gganim <- df %>%
@@ -548,7 +548,7 @@ gganim <- df %>%
   theme_grey(base_size = 20) +
   transition_reveal(year)
 
-animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/gganim_1box_step_2pools_allocation.gif", loop = TRUE))
+animate(gganim, nframes = 100, width = 700, height = 500, fps = 10, renderer = gifski_renderer("~/teaching/gcb/fig/gganim_1box_step_2pools_allocation.gif", loop = TRUE))
 ```
 
 ## Non-linearity in allocation
@@ -574,7 +574,7 @@ df3 %>%
   theme_classic() +
   xlim(0,1) + ylim(0,1) +
   labs(x = "dI/I", y = "dC*/C*")
-ggsave("~/teaching/gcb/dln_cpool_nonlinalloc.pdf", width = 3, height = 2)
+ggsave("~/teaching/gcb/fig/dln_cpool_nonlinalloc.pdf", width = 3, height = 2)
 ```
 
 # Maps
@@ -595,7 +595,7 @@ plot_map3(
   plot_subtitle = expression( paste("g C m"^-2, " yr"^-1 ) ), 
   breaks = c(seq(0, 3000, 200), Inf)
   )
-ggsave("~/teaching/gcb/photosynthesis.pdf", width = 8, height = 4)
+ggsave("~/teaching/gcb/fig/photosynthesis.pdf", width = 8, height = 4)
 ```
 
 ## Land use
@@ -617,7 +617,7 @@ plot_map3(
   breaks = seq(0, 1, 0.1)
   # legend_title = "(unitless)"
   )
-ggsave("~/teaching/gcb/cropland.pdf", width = 8, height = 4)
+ggsave("~/teaching/gcb/fig/cropland.pdf", width = 8, height = 4)
 
 ```
 
@@ -637,7 +637,7 @@ plot_map3(
   latmin = -60, latmax = 80
   # legend_title = "(unitless)"
   )
-ggsave("~/teaching/gcb/cropland_diff_diff_1970_2017.pdf", width = 8, height = 4)
+ggsave("~/teaching/gcb/fig/cropland_diff_diff_1970_2017.pdf", width = 8, height = 4)
 
 ```
 
@@ -671,7 +671,7 @@ gg$ggmap <- gg$ggmap +
 
 cowplot::plot_grid(gg$ggmap, gg$gglegend, ncol = 2, rel_widths = c(1, 0.2))
 
-ggsave("~/teaching/gcb/map_p_pet.pdf", width = 8, height = 4)
+ggsave("~/teaching/gcb/fig/map_p_pet.pdf", width = 8, height = 4)
 ```
 
 ## fAPAR map
@@ -686,7 +686,7 @@ gg <- plot_map3(
   combine = TRUE
 )
 gg
-ggsave("~/teaching/gcb/map_fapar.pdf", width = 8, height = 4)
+ggsave("~/teaching/gcb/fig/map_fapar.pdf", width = 8, height = 4)
 ```
 
 ## LAI map
@@ -706,7 +706,7 @@ gg <- plot_map3(
   latmin = -55, latmax = 80
 )
 gg
-ggsave("~/teaching/gcb/map_lair.pdf", width = 8, height = 4)
+ggsave("~/teaching/gcb/fig/map_lair.pdf", width = 8, height = 4)
 ```
 
 ## Photosynthesis FvCB model
@@ -789,6 +789,6 @@ df_ci %>%
     ) +
   theme_classic()
 
-ggsave("~/teaching/gcb/assimilation.pdf", width = 5, height = 3)
+ggsave("~/teaching/gcb/fig/assimilation.pdf", width = 5, height = 3)
 ```
 
